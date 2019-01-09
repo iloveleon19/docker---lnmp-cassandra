@@ -1,0 +1,72 @@
+version: '3'
+services:
+    nginx:
+        image: nginx:latest
+        # 端口映射
+        ports:
+            - "80:80"
+        # 依賴關係 先跑php
+        depends_on:
+            - "php"
+        # 數據卷
+        volumes:
+            # 映射主機 ./conf.d 目錄到容器 /etc/nginx/conf.d 目錄
+            - "./conf.d:/etc/nginx/conf.d"
+            - "./html:/var/www/html"
+        networks:
+            - app_net
+        # 容器名稱
+        container_name: "compose-nginx"
+    php:
+        build: ./php-mysqli-cassandra
+        # image 指定 build Dockerfile 生成鏡像的名稱
+        image: php:7.1-fpm-mysqli-cassandra
+        ports:
+            - "9000:9000"
+        volumes:
+            - "./html:/var/www/html"
+        networks:
+            - app_net
+        container_name: "compose-php"
+    mysql:
+        image: mysql:5.7
+        ports:
+            - "3306:3306"
+        volumes:
+            - ./data/dump:/docker-entrypoint-initdb.d
+            - ./data/db:/var/lib/mysql
+        # 環境變量
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_DATABASE: mysqldb
+            MYSQL_USER: mysqldb_user
+            MYSQL_PASSWORD: mysqldb_password
+        networks:
+            app_net:
+                # 固定子網ip，網段必須在子網絡10.10.*.*
+                ipv4_address: 10.10.10.1
+        container_name: "compose-mysql"
+    cassandra:
+        image: cassandra:3.11
+        ports:
+            - "9042:9042"
+        networks:
+            app_net:
+                # 固定子網ip，網段必須在子網絡10.10.*.*
+                ipv4_address: 10.10.10.2
+        container_name: "compose-cassandra"
+    # os:
+    #     image: ubuntu:18.04
+    #     tty: true
+    #     networks:
+    #         - app_net
+    #     container_name: "compose-ubuntu"
+
+networks:
+    # 配置 docker network
+    app_net:
+        driver: bridge
+        ipam:
+            config:
+                # 子網絡
+                - subnet: 10.10.0.0/16
