@@ -33,8 +33,8 @@ services:
         ports:
             - "3306:3306"
         volumes:
-            - ./data/dump:/docker-entrypoint-initdb.d
-            - ./data/db:/var/lib/mysql
+            - ./mysql/schema:/docker-entrypoint-initdb.d
+            - ./mysql/mysql:/var/lib/mysql
         # 環境變量
         environment:
             MYSQL_ROOT_PASSWORD: root
@@ -50,11 +50,20 @@ services:
         image: cassandra:3.11
         ports:
             - "9042:9042"
+        volumes:
+            - ./cassandra/schema:/docker-entrypoint-initdb.d
+            - ./cassandra/cassandra:/var/lib/cassandra
         networks:
             app_net:
                 # 固定子網ip，網段必須在子網絡10.10.*.*
                 ipv4_address: 10.10.10.2
         container_name: "compose-cassandra"
+    # nodejs:
+    #     image: node:7.6
+    #     tty: true
+    #     networks:
+    #         - app_net
+    #     container_name: "compose-node"
     # os:
     #     image: ubuntu:18.04
     #     tty: true
